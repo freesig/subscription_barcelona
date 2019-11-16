@@ -39,6 +39,11 @@ pub struct Content {
     content: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
+pub enum Message {
+    RequestSubscription,
+}
+
 #[zome]
 mod subscription {
 
@@ -61,9 +66,47 @@ mod subscription {
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
             },
-            validation: | _validation_data: hdk::EntryValidationData<MyEntry>| {
-                Ok(())
+            validation: | validation_data: hdk::EntryValidationData<Content>| {
+                match validation_data {
+                    hdk::EntryValidationData::Create{ entry, .. } => {
+                        if entry.content.len() > 200 {
+                            Err("Conent too long")
+                        } else {
+                            Ok(())
+                        }
+                    },
+                    _ => Ok(()),
+                }
             }
         )
+    }
+
+    #[hc_public]
+    pub fn get_content(agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Content>> {
+        Err("Not subscribed".into())
+
+    }
+
+    #[hc_public]
+    pub fn add_content(content: Content) -> ZomeApiResult<Address> {
+        let entry = Entry::App("content".into(), content.into());
+        hdk::commit_entry(&entry)
+    }
+
+    #[hc_public]
+    pub fn request_subscription(agent_id: Address) -> ZomeApiResult<Address> {
+        let claim_address = hdk::send(agent_id, Message.into(), 100000.into())?;
+    }
+
+    #[receive]
+    pub fn receive(from: Address, msg: JsonString) -> String {
+        let msg: Result<Message, _> = msg.try_into();
+        match msg {
+            Ok(Message::RequestSubscription) => {
+
+            },
+            Err(err) => Err(format!("message error {}", err)),
+            _ => "Error passing message".into(),
+        }
     }
 }

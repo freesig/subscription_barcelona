@@ -60,10 +60,13 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   const add_result = await provider.call("sub_instance", "subscription", "add_content", {"content": "Hey Holochain" });
   t.ok(add_result.Ok);
   const alice_address = subscriber_alice.instance('sub_instance').agentAddress;
-  const result = await provider.call("sub_instance", "subscription", "get_content", {"agent_id": alice_address });
+  const provider_address = provider.instance('sub_instance').agentAddress;
+  const claim_address = await provider.call("sub_instance", "subscription", "request_subscription", {"agent_id": provider_address });
+  t.ok(claim_address.Ok);
+
+  const result = await provider.call("sub_instance", "subscription", "get_content", {"agent_id": alice_address, claim: claim_address });
   t.notOk(add_result.Err);
   console.log(t);
-  //await provider.call("sub_instance", "subscription", "request_subscription", {"
 
 
     /*
