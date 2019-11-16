@@ -81,8 +81,7 @@ mod subscription {
         )
     }
 
-    #[hc_public]
-    pub fn get_content(agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Content>> {
+    fn get_content(agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Content>> {
         Err("Not subscribed".into())
 
     }
@@ -101,12 +100,19 @@ mod subscription {
     #[receive]
     pub fn receive(from: Address, msg: JsonString) -> String {
         let msg: Result<Message, _> = msg.try_into();
-        match msg {
+        let result = match msg {
             Ok(Message::RequestSubscription) => {
-
+                let mut functions = Capfunctions::new();
+                functions.insert("subscription", vec!["get_content"]);
+                hdk::commit_capability_grant(
+                    id: "is_subscribed",
+                    CababilityType::Assigned,
+                    Some(vec![from]),
+                    functions)
             },
             Err(err) => Err(format!("message error {}", err)),
-            _ => "Error passing message".into(),
-        }
+            _ => Err("Error passing message".into()),
+        };
+        result.into()
     }
 }

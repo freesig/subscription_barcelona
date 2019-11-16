@@ -64,10 +64,6 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   const claim_address = await provider.call("sub_instance", "subscription", "request_subscription", {"agent_id": provider_address });
   t.ok(claim_address.Ok);
 
-  const result = await provider.call("sub_instance", "subscription", "get_content", {"agent_id": alice_address, claim: claim_address });
-  t.notOk(add_result.Err);
-  console.log(t);
-
 
     /*
   // Make a call to a Zome function
