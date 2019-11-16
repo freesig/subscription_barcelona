@@ -9,6 +9,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
+use serde_json::json;
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
@@ -16,6 +17,7 @@ use hdk::{
 use hdk::holochain_core_types::{
     entry::Entry,
     dna::entry_types::Sharing,
+    entry::cap_entries::{CapFunctions, CapabilityType},
 };
 
 use hdk::holochain_json_api::{
@@ -28,6 +30,8 @@ use hdk::holochain_persistence_api::{
 };
 
 use hdk_proc_macros::zome;
+
+use std::convert::TryInto;
 
 // see https://developer.holochain.org/api/0.0.38-alpha14/hdk/ for info on using the hdk library
 
@@ -70,7 +74,7 @@ mod subscription {
                 match validation_data {
                     hdk::EntryValidationData::Create{ entry, .. } => {
                         if entry.content.len() > 200 {
-                            Err("Conent too long")
+                            Err("Conent too long".into())
                         } else {
                             Ok(())
                         }
@@ -81,38 +85,35 @@ mod subscription {
         )
     }
 
-    fn get_content(agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Content>> {
-        Err("Not subscribed".into())
-
-    }
-
-    #[hc_public]
+    #[zome_fn("hc_public")]
     pub fn add_content(content: Content) -> ZomeApiResult<Address> {
         let entry = Entry::App("content".into(), content.into());
         hdk::commit_entry(&entry)
     }
 
-    #[hc_public]
+    #[zome_fn("hc_public")]
     pub fn request_subscription(agent_id: Address) -> ZomeApiResult<Address> {
-        let claim_address = hdk::send(agent_id, Message.into(), 100000.into())?;
+        let r = hdk::send(agent_id, json!(Message::RequestSubscription).to_string(), 100000.into())?;
+        let r = JsonString::from_json(&r);
+        let r = r.try_into()?;
+        r
     }
 
     #[receive]
     pub fn receive(from: Address, msg: JsonString) -> String {
-        let msg: Result<Message, _> = msg.try_into();
-        let result = match msg {
+        let msg: Result<Message, _> = JsonString::from_json(&msg).try_into();
+        match msg {
             Ok(Message::RequestSubscription) => {
-                let mut functions = Capfunctions::new();
-                functions.insert("subscription", vec!["get_content"]);
-                hdk::commit_capability_grant(
-                    id: "is_subscribed",
-                    CababilityType::Assigned,
+                let mut functions = CapFunctions::new();
+                functions.insert("subscription".into(), vec!["get_content".into()]);
+                let r = hdk::commit_capability_grant(
+                    "is_subscribed".to_string(),
+                    CapabilityType::Assigned,
                     Some(vec![from]),
-                    functions)
+                    functions);
+                json!(r).to_string()
             },
-            Err(err) => Err(format!("message error {}", err)),
-            _ => Err("Error passing message".into()),
-        };
-        result.into()
+            Err(err) => format!("message error {}", err),
+        }
     }
 }
