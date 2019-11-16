@@ -35,12 +35,12 @@ use hdk_proc_macros::zome;
 // agent's chain via the exposed function create_my_entry
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
-pub struct MyEntry {
+pub struct Content {
     content: String,
 }
 
 #[zome]
-mod my_zome {
+mod subscription {
 
     #[init]
     fn init() {
@@ -53,11 +53,11 @@ mod my_zome {
     }
 
     #[entry_def]
-     fn my_entry_def() -> ValidatingEntryType {
+     fn content_def() -> ValidatingEntryType {
         entry!(
-            name: "my_entry",
-            description: "this is a same entry defintion",
-            sharing: Sharing::Public,
+            name: "content",
+            description: "this is some content",
+            sharing: Sharing::Private,
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
             },
@@ -66,17 +66,4 @@ mod my_zome {
             }
         )
     }
-
-    #[zome_fn("hc_public")]
-    fn create_my_entry(entry: MyEntry) -> ZomeApiResult<Address> {
-        let entry = Entry::App("my_entry".into(), entry.into());
-        let address = hdk::commit_entry(&entry)?;
-        Ok(address)
-    }
-
-    #[zome_fn("hc_public")]
-    fn get_my_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
-        hdk::get_entry(&address)
-    }
-
 }
