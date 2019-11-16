@@ -43,6 +43,7 @@ pub struct Content {
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 pub enum Message {
     RequestSubscription,
+    RequestContent(Address),
 }
 
 #[zome]
@@ -71,6 +72,11 @@ mod subscription {
     #[zome_fn("hc_public")]
     pub fn request_subscription(agent_id: Address) -> ZomeApiResult<Address> {
         subscriber::request_subscription(agent_id)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn request_content(agent_id: Address, claim_address: Address) -> ZomeApiResult<Vec<Content>> {
+        subscriber::request_content(agent_id, claim_address)
     }
 
     #[receive]

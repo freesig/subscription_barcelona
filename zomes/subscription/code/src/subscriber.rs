@@ -14,13 +14,24 @@ use hdk::{
 };
 
 use std::convert::TryInto;
+use crate::Content;
 
-pub fn request_subscription(agent_id: Address) -> ZomeApiResult<Address> {
+pub(crate) fn request_subscription(agent_id: Address) -> ZomeApiResult<Address> {
     let r = hdk::send(
-        agent_id,
+        agent_id.clone(),
         json!(Message::RequestSubscription).to_string(),
         100000.into(),
     )?;
-    let r = JsonString::from_json(&r).try_into()?;
-    r
+    let claim_address = JsonString::from_json(&r).try_into()?;
+    hdk::commit_capability_claim("is_subscribed", agent_id, claim_address)
+}
+
+pub(crate) fn request_content(agent_id: Address, claim_address: Address) -> ZomeApiResult<Vec<Content>> {
+    let r = hdk::send(
+        agent_id.clone(),
+        json!(Message::RequestContent(claim_address)).to_string(),
+        100000.into(),
+    )?;
+    let content = JsonString::from_json(&r).try_into()?;
+    content
 }

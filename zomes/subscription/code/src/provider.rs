@@ -5,16 +5,13 @@ use hdk::holochain_core_types::{dna::entry_types::Sharing, entry::Entry};
 use hdk::holochain_persistence_api::cas::content::Address;
 use serde_json::json;
 
-use hdk::holochain_json_api::{
-    json::JsonString,
-};
+use hdk::holochain_json_api::json::JsonString;
 
 use crate::Message;
 
-use hdk::holochain_core_types::{
-    entry::cap_entries::{CapFunctions, CapabilityType},
-};
+use hdk::holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 
+use hdk::prelude::*;
 use std::convert::TryInto;
 
 pub(crate) fn add_content(content: Content) -> ZomeApiResult<Address> {
@@ -59,6 +56,28 @@ pub(crate) fn receive(from: Address, msg: String) -> String {
             );
             json!(r).to_string()
         }
+        Ok(Message::RequestContent(claim)) => json!(try_get_content(from, claim)).to_string(),
         Err(err) => format!("message error {}", err),
+    }
+}
+
+fn try_get_content(_agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Content>> {
+    let entries = hdk::query_result(
+        EntryType::CapTokenGrant.into(),
+        QueryArgsOptions {
+            entries: true,
+            ..Default::default()
+        },
+    )?;
+    match entries {
+        QueryResult::Entries(entries) => {
+            let token = entries.iter().filter(|(addr, _)| &claim == addr).next();
+            if token.is_some() {
+                Ok(vec![Content{ content: format!("test") }])
+            } else {
+                Err("No capability token".to_string().into())
+            }
+        }
+        _ => Err("No capability token".to_string().into()),
     }
 }
