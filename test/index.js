@@ -29,7 +29,13 @@ const orchestrator = new Orchestrator({
 
   globalConfig: {
     logger: true,
-    network: 'memory',  // must use singleConductor middleware if using in-memory network
+    network: 'memory',
+    /*
+    network: {
+      type: 'sim2h',
+      sim2h_url: 'wss://localhost:9002',
+    },
+    */
   },
 
   // the following are optional:
@@ -42,14 +48,25 @@ const orchestrator = new Orchestrator({
 
 const conductorConfig = {
   instances: {
-    myInstanceName: Config.dna(dnaPath, 'scaffold-test')
+    sub_instance: Config.dna(dnaPath, 'scaffold-test')
   }
 }
 
 orchestrator.registerScenario("description of example test", async (s, t) => {
 
-  const {alice, bob} = await s.players({alice: conductorConfig, bob: conductorConfig})
+  const {subscriber_alice, subscriber_bob} = await s.players({alice: conductorConfig, bob: conductorConfig})
+  const {provider, host} = await s.players({provider: conductorConfig, host: conductorConfig})
 
+  const add_result = await provider.call("sub_instance", "subscription", "add_content", {"content": "Hey Holochain" });
+  t.ok(add_result.Ok);
+  const alice_address = subscriber_alice.instance('sub_instance').agentAddress;
+  const result = await provider.call("sub_instance", "subscription", "get_content", {"agent_id": alice_address });
+  t.notOk(add_result.Err);
+  console.log(t);
+  //await provider.call("sub_instance", "subscription", "request_subscription", {"
+
+
+    /*
   // Make a call to a Zome function
   // indicating the function, and passing it an input
   const addr = await alice.call("myInstanceName", "my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
@@ -61,6 +78,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
 
   // check for equality of the actual and expected results
   t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
+  */
 })
 
 orchestrator.run()
