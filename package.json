@@ -1,14 +1,17 @@
 {
-  "name": "Holochain App Name",
+  "name": "subscription",
   "description": "A Holochain app",
   "authors": [
     {
-      "identifier": "Author Name <author@name.com>",
+      "identifier": "Tom Gowan",
       "public_key_source": "",
       "signature": ""
     }
   ],
   "version": "0.1.0",
   "dht": {},
-  "properties": null
+  "properties": null,
+  "scripts": {
+    "test": "hc test"
+  }
 }
