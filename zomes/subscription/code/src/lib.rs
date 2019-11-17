@@ -64,6 +64,11 @@ mod subscription {
         provider::content_def()
     }
 
+    #[zome_fn("is_subscribed")]
+    pub fn get_content() -> ZomeApiResult<String> {
+        Ok("Hey".into())
+    }
+
     #[zome_fn("hc_public")]
     pub fn add_content(content: Content) -> ZomeApiResult<Address> {
         provider::add_content(content)

@@ -22,5 +22,6 @@ module.exports = scenario => {
     console.log('getting content' + JSON.stringify(content_result))
     let content = content_result.Ok[0].content
     t.deepEqual(content, 'test')
+    
   })
 }

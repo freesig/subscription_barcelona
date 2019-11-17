@@ -1,16 +1,16 @@
 use crate::Content;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::error::ZomeApiResult;
-use hdk::holochain_core_types::{dna::entry_types::Sharing, entry::Entry};
 use hdk::holochain_core_types::entry::cap_entries::CapTokenClaim;
+use hdk::holochain_core_types::{dna::entry_types::Sharing, entry::Entry};
 use hdk::holochain_persistence_api::cas::content::Address;
- use serde_json::json;
+use serde_json::json;
 
- use hdk::holochain_json_api::json::JsonString;
+use hdk::holochain_json_api::json::JsonString;
 //
 use crate::Message;
 
- use hdk::holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
+use hdk::holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 
 use hdk::prelude::*;
 use std::convert::TryInto;
@@ -62,7 +62,18 @@ pub(crate) fn receive(from: Address, msg: String) -> String {
     }
 }
 
-fn try_get_content(agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Vec<Content>> {
+fn try_get_content(_agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Vec<Content>> {
+    let grant_address = claim.token();
+    let content = hdk::call(
+        hdk::THIS_INSTANCE,
+        "subscription",
+        grant_address.clone(),
+        "get_content",
+        json!({}).into(),
+    )?
+    .into();
+    Ok(vec![Content { content }])
+    /*
     let entries = hdk::query_result(
         EntryType::CapTokenGrant.into(),
         QueryArgsOptions {
@@ -70,7 +81,6 @@ fn try_get_content(agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Vec
             ..Default::default()
         },
     )?;
-    let grant_address = claim.token();
     match entries {
         QueryResult::Entries(entries) => {
             let token = entries.iter().filter(|(addr, _)| &grant_address == addr).next();
@@ -79,10 +89,13 @@ fn try_get_content(agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Vec
                 if let Some(assignees) = assignees {
                     if assignees.contains(&agent_id) {
                         //  now call the zome and function in the CapFunctions
-                        let functions = token.functions();
+                        let zomes = token.functions();
                         let mut sss = String::new();
-                        for (zome, function) in &functions {
-                            sss = format!("{} {:?}: \"{:?}\"", sss, zome, function);
+                        for (zome, functions) in &zomes {
+                            sss = format!("{} {:?}: \"{:?}\"", sss, zome, functions);
+                            for function in functions {
+                                sss = hdk::call(hdk::THIS_INSTANCE, zome, claim_address.clone(), function, "".into())?.into();
+                            }
                         }
                         Ok(vec![Content{ content: sss }])
                     } else {
@@ -97,4 +110,5 @@ fn try_get_content(agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Vec
         }
         _ => Err("No entries".to_string().into()),
     }
+    */
 }

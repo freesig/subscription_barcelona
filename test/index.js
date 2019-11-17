@@ -4,7 +4,7 @@ const { Orchestrator, combine, callSync, singleConductor, tapeExecutor } = requi
 //hc-sim2h-server-install
 //sim2h_server -p 9001
 const orchestrator = new Orchestrator({
-  globalConfig: {logger: false,  network: 'memory'  },
+  globalConfig: {logger: true,  network: 'memory'  },
   middleware: combine(callSync, singleConductor, tapeExecutor(tape))
 })
 process.on('unhandledRejection', error => {
