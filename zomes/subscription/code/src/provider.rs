@@ -2,14 +2,15 @@ use crate::Content;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::error::ZomeApiResult;
 use hdk::holochain_core_types::{dna::entry_types::Sharing, entry::Entry};
+use hdk::holochain_core_types::entry::cap_entries::CapTokenClaim;
 use hdk::holochain_persistence_api::cas::content::Address;
-use serde_json::json;
+ use serde_json::json;
 
-use hdk::holochain_json_api::json::JsonString;
-
+ use hdk::holochain_json_api::json::JsonString;
+//
 use crate::Message;
 
-use hdk::holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
+ use hdk::holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 
 use hdk::prelude::*;
 use std::convert::TryInto;
@@ -48,20 +49,20 @@ pub(crate) fn receive(from: Address, msg: String) -> String {
         Ok(Message::RequestSubscription) => {
             let mut functions = CapFunctions::new();
             functions.insert("subscription".into(), vec!["get_content".into()]);
-            let r = hdk::commit_capability_grant(
+            let grant_address_result = hdk::commit_capability_grant(
                 "is_subscribed".to_string(),
                 CapabilityType::Assigned,
                 Some(vec![from]),
                 functions,
             );
-            json!(r).to_string()
+            json!(grant_address_result).to_string()
         }
         Ok(Message::RequestContent(claim)) => json!(try_get_content(from, claim)).to_string(),
         Err(err) => format!("message error {}", err),
     }
 }
 
-fn try_get_content(_agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Content>> {
+fn try_get_content(agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Vec<Content>> {
     let entries = hdk::query_result(
         EntryType::CapTokenGrant.into(),
         QueryArgsOptions {
@@ -69,15 +70,31 @@ fn try_get_content(_agent_id: Address, claim: Address) -> ZomeApiResult<Vec<Cont
             ..Default::default()
         },
     )?;
+    let grant_address = claim.token();
     match entries {
         QueryResult::Entries(entries) => {
-            let token = entries.iter().filter(|(addr, _)| &claim == addr).next();
-            if token.is_some() {
-                Ok(vec![Content{ content: format!("test") }])
+            let token = entries.iter().filter(|(addr, _)| &grant_address == addr).next();
+            if let Some((_, Entry::CapTokenGrant(token))) = token {
+                let assignees = token.assignees();
+                if let Some(assignees) = assignees {
+                    if assignees.contains(&agent_id) {
+                        //  now call the zome and function in the CapFunctions
+                        let functions = token.functions();
+                        let mut sss = String::new();
+                        for (zome, function) in &functions {
+                            sss = format!("{} {:?}: \"{:?}\"", sss, zome, function);
+                        }
+                        Ok(vec![Content{ content: sss }])
+                    } else {
+                        Err("Agents is not an assignee".to_string().into())
+                    }
+                } else {
+                    Err("Agents is not an assignee".to_string().into())
+                }
             } else {
-                Err("No capability token".to_string().into())
+                Err("No capability token found".to_string().into())
             }
         }
-        _ => Err("No capability token".to_string().into()),
+        _ => Err("No entries".to_string().into()),
     }
 }

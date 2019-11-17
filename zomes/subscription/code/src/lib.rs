@@ -12,7 +12,7 @@ extern crate holochain_json_derive;
 use hdk::{
     error::ZomeApiResult,
 };
-
+use hdk::holochain_core_types::entry::cap_entries::CapTokenClaim;
 use hdk::entry_definition::ValidatingEntryType;
 
 use hdk::holochain_json_api::{
@@ -43,7 +43,7 @@ pub struct Content {
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 pub enum Message {
     RequestSubscription,
-    RequestContent(Address),
+    RequestContent(CapTokenClaim),
 }
 
 #[zome]
@@ -70,13 +70,13 @@ mod subscription {
     }
 
     #[zome_fn("hc_public")]
-    pub fn request_subscription(agent_id: Address) -> ZomeApiResult<Address> {
-        subscriber::request_subscription(agent_id)
+    pub fn request_subscription(provider_agent_id: Address) -> ZomeApiResult<Address> {
+        subscriber::request_subscription(provider_agent_id)
     }
 
     #[zome_fn("hc_public")]
-    pub fn request_content(agent_id: Address, claim_address: Address) -> ZomeApiResult<Vec<Content>> {
-        subscriber::request_content(agent_id, claim_address)
+    pub fn request_content(provider_agent_id: Address, claim_address: Address) -> ZomeApiResult<Vec<Content>> {
+        subscriber::request_content(provider_agent_id, claim_address)
     }
 
     #[receive]

@@ -6,6 +6,11 @@
       "identifier": "Tom Gowan",
       "public_key_source": "",
       "signature": ""
+    },
+    {
+      "identifier": "Philip Beadle",
+      "public_key_source": "",
+      "signature": ""
     }
   ],
   "version": "0.1.0",
