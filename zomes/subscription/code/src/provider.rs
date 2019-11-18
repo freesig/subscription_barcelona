@@ -72,7 +72,8 @@ fn try_get_content(_agent_id: Address, claim: CapTokenClaim) -> ZomeApiResult<Ve
         json!({}).into(),
     )?
     .into();
-    Ok(vec![Content { content }])
+
+    Ok(vec![Content { content: content }])
     /*
     let entries = hdk::query_result(
         EntryType::CapTokenGrant.into(),
